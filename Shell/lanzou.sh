@@ -14,8 +14,12 @@ function curl() {
     command curl -s -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25' -e 'https://wwa.lanzoux.com' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8' -H 'Accept-Encoding: deflate, sdch, br' -H 'Accept-Language: zh-CN,zh;q=0.8' -H 'Cache-Control: max-age=0' -H 'Connection: keep-alive' -H 'Upgrade-Insecure-Requests: 1' "$@"
 }
 # 从蓝奏云分享链接中获取文件ID
-if [[ -n `echo "$1" | awk -F '/' '{print $4}'` ]]; then
-    fileid=$(echo "$1" | awk -F '/' '{print $4}')
+if [[ -n `echo "$1" | awk -F '/' '{print $5}'` ]]; then
+    fileid=`echo "$1" | awk -F '/' '{print $5}'`
+elif [[ -n `echo "$1" | awk -F '/' '{print $4}'` ]]; then
+    fileid=`echo "$1" | awk -F '/' '{print $4}'`
+elif [[ -n `echo "$1" | awk -F '/' '{print $3}'` ]]; then
+    fileid=`echo "$1" | awk -F '/' '{print $3}'`
 elif [[ -n `echo "$1" | awk -F '/' '{print $2}'` ]]; then
     fileid=`echo "$1" | awk -F '/' '{print $2}'`
 else
