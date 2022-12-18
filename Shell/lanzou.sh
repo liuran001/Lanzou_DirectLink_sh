@@ -13,4 +13,4 @@ tedomain=$(echo "$html" | awk -F 'var tedomain' '{printf $2}' | awk -F "'" '{pri
 domianload=$(echo "$html" | awk -F 'var domianload' '{printf $2}' | awk -F "'" '{printf $2}')
 downurl="$tedomain""$domianload"
 directlink=$(curl -I "$downurl" | grep location | awk -F 'location: ' '{print $2}')
-echo "$directlink"
+echo "$directlink" | sed "s/\r//g"
