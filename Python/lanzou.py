@@ -1,3 +1,7 @@
+# 蓝奏云直链解析脚本
+# 作者：笨蛋ovo
+# https://github.com/liuran001/Lanzou_DirectLink_sh
+
 import random
 import requests
 from typing import Optional
