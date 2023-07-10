@@ -42,7 +42,8 @@ pwd=$(echo "$2")
 fileid=$(echo "$1" | awk -F '/' '{print $NF}')
 usedom="wwa.lanzoux.com
 wwa.lanzoup.com
-wwa.lanzouw.com"
+wwa.lanzouw.com
+wwa.lanzouy.com"
 
 for usedom in $usedom
 do
