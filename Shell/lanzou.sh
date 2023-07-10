@@ -9,7 +9,7 @@ get() {
         downurl="$tedomain""$domianload"
     else
         postsign=$(echo "$html" | awk -F 'var postsign' '{printf $2}' | awk -F "'" '{printf $2}')
-        rawdownurl=$(curl 'https://qqcn.lanzoup.com/ajaxm.php' --data-raw "action=downprocess&sign=$postsign&p=$pwd")
+        rawdownurl=$(curl "https://$usedom/ajaxm.php" --data-raw "action=downprocess&sign=$postsign&p=$pwd")
         dom=$(echo "$rawdownurl" | awk -F 'dom' '{printf $2}' | awk -F '"' '{printf $3}' | sed 's/\\//g')
         url=$(echo "$rawdownurl" | awk -F 'url' '{printf $2}' | awk -F '"' '{printf $3}' | sed 's/\\//g')
         downurl=$dom/file/$url
@@ -23,17 +23,17 @@ curl() {
 [[ -z "$1" ]] && echo "- 未传入链接参数" && exit 1
 pwd=$(echo "$2")
 fileid=$(echo "$1" | awk -F '/' '{print $NF}')
-url1="https://wwa.lanzoux.com/tp/$fileid"
-url2="https://wwa.lanzoup.com/tp/$fileid"
-url3="https://wwa.lanzouw.com/tp/$fileid"
-html=$(curl "$url1")
+dom1="wwa.lanzoux.com"
+dom2="wwa.lanzoup.com"
+dom3="wwa.lanzouw.com"
+html=$(curl "https://$dom1/tp/$fileid") && usedom=$dom1
 get 
 
 if [[ "$directlink" = '' ]]; then
-    html=$(curl "$url2")
+    html=$(curl "https://$dom2/tp/$fileid") && usedom=$dom2
     get
     if [[ "$directlink" = '' ]]; then
-        html=$(curl "$url3")
+        html=$(curl "https://$dom3/tp/$fileid") && usedom=$dom3
         get
     fi
 fi
