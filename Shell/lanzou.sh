@@ -23,7 +23,17 @@ curl() {
         -H 'Accept-Language: zh-CN,zh;q=0.8' \
         -H 'Cache-Control: max-age=0' \
         -H 'Connection: keep-alive' \
-        -H 'Upgrade-Insecure-Requests: 1' "$@"
+        -H 'Upgrade-Insecure-Requests: 1' \
+        -H "X-Forwarded-For: $rand_IP" "$@"
+}
+rand_IP() {
+    ip2id=$((RANDOM % 195 + 60))
+    ip3id=$((RANDOM % 195 + 60))
+    ip4id=$((RANDOM % 195 + 60))
+    arr_1=("218" "218" "66" "66" "218" "218" "60" "60" "202" "204" "66" "66" "66" "59" "61" "60" "222" "221" "66" "59" "60" "60" "66" "218" "218" "62" "63" "64" "66" "66" "122" "211")
+    randarr=$((RANDOM % ${#arr_1[@]}))
+    ip1id=${arr_1[$randarr]}
+    echo "$ip1id.$ip2id.$ip3id.$ip4id"
 }
 
 [[ -z "$1" ]] && echo "未传入链接参数" && exit 1
