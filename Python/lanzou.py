@@ -57,7 +57,7 @@ def fetch_direct_link(url: str, pwd: str = None) -> Optional[str]:
         html = fetch(base_url, headers=HEADERS)
 
         if pwd:
-            postsign = html.split('var postsign')[1].split("'")[1]
+            postsign = html.split('var vidksek')[1].split("'")[1]
             rawdownurl_response = fetch(
                 f"https://{domain}/ajaxm.php",
                 headers=HEADERS,
@@ -77,8 +77,8 @@ def fetch_direct_link(url: str, pwd: str = None) -> Optional[str]:
                 print(f"Error: Could not get a response from 'https://{domain}/ajaxm.php'")
                 continue
         else:
-            tedomain = html.split('var tedomain')[1].split("'")[1]
-            domianload = html.split('var domianload')[1].split("'")[1]
+            tedomain = html.split('var vkjxld')[1].split("'")[1]
+            domianload = html.split('var hyggid')[1].split("'")[1]
             downurl = tedomain + domianload
 
         directlink_response = requests.head(downurl, headers=HEADERS)

@@ -4,12 +4,12 @@
 # https://github.com/liuran001/Lanzou_DirectLink_sh
 
 get1() {
-    tedomain=$(echo "$html" | awk -F 'var tedomain' '{printf $2}' | awk -F "'" '{printf $2}')
-    domianload=$(echo "$html" | awk -F 'var domianload' '{printf $2}' | awk -F "'" '{printf $2}')
+    tedomain=$(echo "$html" | awk -F 'var vkjxld' '{printf $2}' | awk -F "'" '{printf $2}')
+    domianload=$(echo "$html" | awk -F 'var hyggid' '{printf $2}' | awk -F "'" '{printf $2}')
     downurl="$tedomain""$domianload"
 }
 get2() {
-    postsign=$(echo "$html" | awk -F 'var postsign' '{printf $2}' | awk -F "'" '{printf $2}')
+    postsign=$(echo "$html" | awk -F 'var vidksek' '{printf $2}' | awk -F "'" '{printf $2}')
     rawdownurl=$(curl "https://$usedom/ajaxm.php" --data-raw "action=downprocess&sign=$postsign&p=$pwd")
     dom=$(echo "$rawdownurl" | awk -F 'dom' '{printf $2}' | awk -F '"' '{printf $3}' | sed 's/\\//g')
     url=$(echo "$rawdownurl" | awk -F 'url' '{printf $2}' | awk -F '"' '{printf $3}' | sed 's/\\//g')
