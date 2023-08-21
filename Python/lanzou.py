@@ -2,6 +2,7 @@
 # 作者：笨蛋ovo
 # https://github.com/liuran001/Lanzou_DirectLink_sh
 
+import argparse
 import random
 import requests
 from typing import Optional
@@ -87,3 +88,18 @@ def fetch_direct_link(url: str, pwd: str = None) -> Optional[str]:
             return directlink
 
     return None
+
+def main():
+    parser = argparse.ArgumentParser(description="Fetch direct link from Lanzou")
+    parser.add_argument("fileid", help="File ID from Lanzou URL")
+    parser.add_argument("password", nargs="?", default=None, help="Password for the file if required")
+    args = parser.parse_args()
+
+    direct_link = fetch_direct_link(args.fileid, args.password)
+    if direct_link:
+        print(direct_link)
+    else:
+        print("Direct link not found.")
+
+if __name__ == "__main__":
+    main()

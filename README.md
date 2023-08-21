@@ -24,12 +24,10 @@ https://i91.lanzoug.com:446/xxx #已省略链接
 
 ```python
 # 不带密码
-direct_link = fetch_direct_link('iuAd711aksub')
-print(direct_link)
+python lanzou.py iuAd711aksub
 
 # 带密码
-direct_link = fetch_direct_link('i2tL911a5x8j', 'dtzn')
-print(direct_link)
+python lanzou.py i2tL911a5x8j dtzn
 ```
 
 ## TODO
