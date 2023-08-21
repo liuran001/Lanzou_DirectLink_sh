@@ -5,12 +5,7 @@
 import argparse
 import random
 import requests
-from typing import Optional
 
-IP_ADDRESSES = [
-    "218", "218", "66", "66", "218", "218", "60", "60", "202", "204", "66", "66", "66", "59", "61", "60", "222", "221", "66", "59",
-    "60", "60", "66", "218", "218", "62", "63", "64", "66", "66", "122", "211"
-]
 URL_DOMAINS = [
     "wwa.lanzoux.com",
     "wwa.lanzoup.com",
@@ -19,87 +14,61 @@ URL_DOMAINS = [
 ]
 
 def get_random_ip():
-    ip1 = random.choice(IP_ADDRESSES)
-    ip2 = random.randint(60, 255)
-    ip3 = random.randint(60, 255)
-    ip4 = random.randint(60, 255)
-    return f"{ip1}.{ip2}.{ip3}.{ip4}"
+    return f"{random.choice([218, 66, 60, 202, 204, 59, 61, 222, 221, 62, 63, 64, 122, 211])}.{random.randint(60, 255)}.{random.randint(60, 255)}.{random.randint(60, 255)}"
 
-random_ip = get_random_ip()
-referer_url = random.choice(URL_DOMAINS)
+def fetch(url: str, data: dict = None, method: str = 'GET') -> str:
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Encoding': 'deflate, sdch, br',
+        'Accept-Language': 'zh-CN,zh;q=0.8',
+        'Cache-Control': 'max-age=0',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'X-Forwarded-For': get_random_ip(),
+        'Referer': random.choice(URL_DOMAINS)
+    }
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Encoding': 'deflate, sdch, br',
-    'Accept-Language': 'zh-CN,zh;q=0.8',
-    'Cache-Control': 'max-age=0',
-    'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1',
-    'X-Forwarded-For': random_ip,
-    'Referer': referer_url,
-}
-
-def fetch(url: str, headers: dict, data: dict = None, method: str = 'GET') -> str:
-    if method.upper() == 'GET':
-        response = requests.get(url, headers=HEADERS)
-    elif method.upper() == 'POST':
-        response = requests.post(url, headers=HEADERS, data=data)
-    else:
-        raise ValueError(f"Unsupported HTTP method: {method}")
+    response = (requests.get if method.upper() == 'GET' else requests.post)(url, headers=headers, data=data)
     response.raise_for_status()
     return response.text
 
-def fetch_direct_link(url: str, pwd: str = None) -> Optional[str]:
-    fileid = url.split('/')[-1]
+def fetch_direct_link(url: str, password: str = None):
+    file_id = url.split('/')[-1]
 
     for domain in URL_DOMAINS:
-        base_url = f"https://{domain}/tp/{fileid}"
-        html = fetch(base_url, headers=HEADERS)
+        base_url = f"https://{domain}/tp/{file_id}"
+        html = fetch(base_url)
 
-        if pwd:
-            postsign = html.split('var vidksek')[1].split("'")[1]
-            rawdownurl_response = fetch(
-                f"https://{domain}/ajaxm.php",
-                headers=HEADERS,
-                data={
-                    'action': 'downprocess',
-                    'sign': postsign,
-                    'p': pwd
-                },
-                method="POST",
-            )
+        post_sign = html.split('var vidksek')[1].split("'")[1]
+        raw_down_url_response = fetch(
+            f"https://{domain}/ajaxm.php",
+            data={'action': 'downprocess', 'sign': post_sign, 'p': password} if password else None,
+            method="POST",
+        )
 
-            if rawdownurl_response:
-                dom = rawdownurl_response.split('dom')[1].split('"')[2].replace('\\', '')
-                url = rawdownurl_response.split('url')[1].split('"')[2].replace('\\', '')
-                downurl = dom + '/file/' + url
-            else:
-                print(f"Error: Could not get a response from 'https://{domain}/ajaxm.php'")
-                continue
+        if raw_down_url_response:
+            dom, url = [part.replace('\\', '') for part in raw_down_url_response.split('dom')[1].split('"')[2:4]]
+            down_url = f"{dom}/file/{url}"
         else:
-            tedomain = html.split('var vkjxld')[1].split("'")[1]
-            domianload = html.split('var hyggid')[1].split("'")[1]
-            downurl = tedomain + domianload
+            print(f"Error: Could not get a response from 'https://{domain}/ajaxm.php'")
+            continue
 
-        directlink_response = requests.head(downurl, headers=HEADERS)
-        directlink = directlink_response.headers.get('location')
-        if directlink:
-            return directlink
+        direct_link_response = requests.head(down_url)
+        direct_link = direct_link_response.headers.get('location')
+        if direct_link:
+            return direct_link
 
     return None
 
 def main():
     parser = argparse.ArgumentParser(description="Fetch direct link from Lanzou")
-    parser.add_argument("fileid", help="File ID from Lanzou URL")
+    parser.add_argument("file_id", help="File ID from Lanzou URL")
     parser.add_argument("password", nargs="?", default=None, help="Password for the file if required")
     args = parser.parse_args()
 
-    direct_link = fetch_direct_link(args.fileid, args.password)
-    if direct_link:
-        print(direct_link)
-    else:
-        print("Direct link not found.")
+    direct_link = fetch_direct_link(args.file_id, args.password)
+    print(direct_link) if direct_link else print("Direct link not found.")
 
 if __name__ == "__main__":
     main()
