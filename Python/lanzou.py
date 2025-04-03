@@ -2,88 +2,101 @@
 # 作者：笨蛋ovo
 # https://github.com/liuran001/Lanzou_DirectLink_sh
 
-import random
 import requests
-from typing import Optional
+import re
 
-IP_ADDRESSES = [
-    "218", "218", "66", "66", "218", "218", "60", "60", "202", "204", "66", "66", "66", "59", "61", "60", "222", "221", "66", "59",
-    "60", "60", "66", "218", "218", "62", "63", "64", "66", "66", "122", "211"
-]
-URL_DOMAINS = [
-    "wwa.lanzoux.com",
-    "wwa.lanzoup.com",
-    "wwa.lanzouw.com",
-    "wwa.lanzouy.com"
-]
+def fetch_direct_link(file_id):
+    UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0"
+    headers = {'User-Agent': UA}
+    
+    # 获取初始页面提取downid
+    initial_url = f"https://ww1.lanzouo.com/{file_id}"
+    try:
+        response = requests.get(initial_url, headers=headers)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise ValueError(f"请求失败: {e}")
 
-def get_random_ip():
-    ip1 = random.choice(IP_ADDRESSES)
-    ip2 = random.randint(60, 255)
-    ip3 = random.randint(60, 255)
-    ip4 = random.randint(60, 255)
-    return f"{ip1}.{ip2}.{ip3}.{ip4}"
+    downid_match = re.search(r'src="/fn\?([^"]+)"', response.text)
+    if not downid_match:
+        raise ValueError("无法提取downid")
+    downid = downid_match.group(1)
 
-random_ip = get_random_ip()
-referer_url = random.choice(URL_DOMAINS)
+    # 获取文件信息页面
+    referer = initial_url
+    fn_url = f"https://ww1.lanzouo.com/fn?{downid}"
+    headers_with_referer = headers.copy()
+    headers_with_referer['Referer'] = referer
+    try:
+        response = requests.get(fn_url, headers=headers_with_referer)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise ValueError(f"请求失败: {e}")
+    page_content = response.text
 
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Encoding': 'deflate, sdch, br',
-    'Accept-Language': 'zh-CN,zh;q=0.8',
-    'Cache-Control': 'max-age=0',
-    'Connection': 'keep-alive',
-    'Upgrade-Insecure-Requests': '1',
-    'X-Forwarded-For': random_ip,
-    'Referer': referer_url,
-}
+    # 提取ajax_file参数（处理空格分隔的多个值）
+    ajax_files = re.findall(r"url : '/ajaxm\.php\?file=([^']+)", page_content)
+    if not ajax_files:
+        raise ValueError("缺少ajax_file参数")
+    ajax_file = ajax_files[-1].split()[-1]  # 取最后一个空格分隔的值
 
-def fetch(url: str, headers: dict, data: dict = None, method: str = 'GET') -> str:
-    if method.upper() == 'GET':
-        response = requests.get(url, headers=HEADERS)
-    elif method.upper() == 'POST':
-        response = requests.post(url, headers=HEADERS, data=data)
-    else:
-        raise ValueError(f"Unsupported HTTP method: {method}")
-    response.raise_for_status()
-    return response.text
+    # 提取ajaxdata参数
+    ajaxdata_match = re.search(r"var ajaxdata = '([^']+)'", page_content)
+    if not ajaxdata_match:
+        raise ValueError("缺少ajaxdata参数")
+    ajaxdata = ajaxdata_match.group(1)
 
-def fetch_direct_link(url: str, pwd: str = None) -> Optional[str]:
-    fileid = url.split('/')[-1]
+    # 提取wp_sign参数
+    wp_sign_match = re.search(r"var wp_sign = '([^']+)'", page_content)
+    if not wp_sign_match:
+        raise ValueError("缺少wp_sign参数")
+    wp_sign = wp_sign_match.group(1)
 
-    for domain in URL_DOMAINS:
-        base_url = f"https://{domain}/tp/{fileid}"
-        html = fetch(base_url, headers=HEADERS)
+    # 提取kdns参数（默认为0）
+    kdns_match = re.search(r"var kdns = ([^;]+)", page_content)
+    kdns = '0'
+    if kdns_match:
+        kdns = re.sub(r'[^0-9]', '', kdns_match.group(1)) or '0'
 
-        if pwd:
-            postsign = html.split('var vidksek')[1].split("'")[1]
-            rawdownurl_response = fetch(
-                f"https://{domain}/ajaxm.php",
-                headers=HEADERS,
-                data={
-                    'action': 'downprocess',
-                    'sign': postsign,
-                    'p': pwd
-                },
-                method="POST",
-            )
+    # 发送POST请求获取下载信息
+    post_url = f"https://ww1.lanzouo.com/ajaxm.php?file={ajax_file}"
+    post_data = {
+        "action": "downprocess",
+        "websignkey": ajaxdata,
+        "signs": ajaxdata,
+        "sign": wp_sign,
+        "websign": "",
+        "kd": kdns,
+        "ves": "1"
+    }
+    headers_post = headers.copy()
+    headers_post['Referer'] = fn_url
+    
+    try:
+        response = requests.post(post_url, data=post_data, headers=headers_post)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        raise ValueError(f"POST请求失败: {e}")
 
-            if rawdownurl_response:
-                dom = rawdownurl_response.split('dom')[1].split('"')[2].replace('\\', '')
-                url = rawdownurl_response.split('url')[1].split('"')[2].replace('\\', '')
-                downurl = dom + '/file/' + url
-            else:
-                print(f"Error: Could not get a response from 'https://{domain}/ajaxm.php'")
-                continue
-        else:
-            tedomain = html.split('var vkjxld')[1].split("'")[1]
-            domianload = html.split('var hyggid')[1].split("'")[1]
-            downurl = tedomain + domianload
+    # 解析JSON响应
+    try:
+        json_data = response.json()
+        dom = json_data.get('dom', '').replace('\\', '')
+        url_part = json_data.get('url', '')
+    except ValueError:
+        # 降级使用正则表达式解析
+        dom_match = re.search(r'"dom":"([^"]+)"', response.text)
+        url_match = re.search(r'"url":"([^"]+)"', response.text)
+        if not dom_match or not url_match:
+            raise ValueError("无法解析下载地址")
+        dom = dom_match.group(1).replace('\\', '')
+        url_part = url_match.group(1)
 
-        directlink_response = requests.head(downurl, headers=HEADERS)
-        directlink = directlink_response.headers.get('location')
-        if directlink:
-            return directlink
+    if not dom or not url_part:
+        raise ValueError("无法解析下载地址")
 
-    return None
+    return f"{dom}/file/{url_part}"
+
+# 示例用法
+# direct_link = fetch_direct_link('iuAd711aksub')
+# print(direct_link)

@@ -3,55 +3,31 @@
 # 作者：笨蛋ovo
 # https://github.com/liuran001/Lanzou_DirectLink_sh
 
-get1() {
-    tedomain=$(echo "$html" | awk -F 'var vkjxld' '{printf $2}' | awk -F "'" '{printf $2}')
-    domianload=$(echo "$html" | awk -F 'var hyggid' '{printf $2}' | awk -F "'" '{printf $2}')
-    downurl="$tedomain""$domianload"
-}
-get2() {
-    postsign=$(echo "$html" | awk -F 'var vidksek' '{printf $2}' | awk -F "'" '{printf $2}')
-    rawdownurl=$(curl "https://$usedom/ajaxm.php" --data-raw "action=downprocess&sign=$postsign&p=$pwd")
-    dom=$(echo "$rawdownurl" | awk -F 'dom' '{printf $2}' | awk -F '"' '{printf $3}' | sed 's/\\//g')
-    url=$(echo "$rawdownurl" | awk -F 'url' '{printf $2}' | awk -F '"' '{printf $3}' | sed 's/\\//g')
-    downurl=$dom/file/$url
-}
-curl() {
-    command curl -s -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25' \
-        -e "https://$usedom" \
-        -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8' \
-        -H 'Accept-Encoding: deflate, sdch, br' \
-        -H 'Accept-Language: zh-CN,zh;q=0.8' \
-        -H 'Cache-Control: max-age=0' \
-        -H 'Connection: keep-alive' \
-        -H 'Upgrade-Insecure-Requests: 1' \
-        -H "X-Forwarded-For: $rand_IP" "$@"
-}
-rand_IP() {
-    ip2id=$((RANDOM % 195 + 60))
-    ip3id=$((RANDOM % 195 + 60))
-    ip4id=$((RANDOM % 195 + 60))
-    arr_1=("218" "218" "66" "66" "218" "218" "60" "60" "202" "204" "66" "66" "66" "59" "61" "60" "222" "221" "66" "59" "60" "60" "66" "218" "218" "62" "63" "64" "66" "66" "122" "211")
-    randarr=$((RANDOM % ${#arr_1[@]}))
-    ip1id=${arr_1[$randarr]}
-    echo "$ip1id.$ip2id.$ip3id.$ip4id"
-}
+UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0"
+fileid=$(echo "$1" | sed -E 's|.*/([^/]+)$|\1|')
+downid=$(curl -s -H "User-Agent: $UA" "https://ww1.lanzouo.com/$fileid" | sed -n 's/.*src="\/fn?\([^"]*\).*/\1/p')
+[ -z "$downid" ] && { echo "无法提取downid"; exit 1; }
+referer="https://ww1.lanzouo.com/$fileid"
 
-[[ -z "$1" ]] && echo "未传入链接参数" && exit 1
+page_content=$(curl -s -H "User-Agent: $UA" -H "Referer: $referer" "https://ww1.lanzouo.com/fn?$downid")
 
-pwd=$(echo "$2")
-fileid=$(echo "$1" | awk -F '/' '{print $NF}')
-usedom="wwa.lanzoux.com
-wwa.lanzoup.com
-wwa.lanzouw.com
-wwa.lanzouy.com"
+ajax_file=$(echo "$page_content" | sed -n "s/.*url : '\/ajaxm.php?file=\([^']*\).*/\1/p")
+ajax_file=$(echo "$ajax_file" | tr ' ' '\n' | tail -1)
+ajaxdata=$(echo "$page_content" | sed -n "s/.*var ajaxdata = '\([^']*\).*/\1/p")
+wp_sign=$(echo "$page_content" | sed -n "s/.*var wp_sign = '\([^']*\).*/\1/p")
+kdns=$(echo "$page_content" | sed -n "s/.*var kdns = \([^;]*\).*/\1/p" | tr -cd '0-9')
 
-for usedom in $usedom
-do
-    html=$(curl "https://$usedom/tp/$fileid")
-    [[ -z "$pwd" ]] && get1 || get2
-    directlink=$(curl -I "$downurl" | grep location | awk -F 'location: ' '{print $2}')
-    [[ "$directlink" != '' ]] && break
-done
+[ -z "$ajax_file" ] && { echo "缺少ajax_file参数"; exit 1; }
+[ -z "$ajaxdata" ] && { echo "缺少ajaxdata参数"; exit 1; }
+[ -z "$wp_sign" ] && { echo "缺少wp_sign参数"; exit 1; }
+[ -z "$kdns" ] && kdns=0
 
-[[ $directlink = '' ]] && echo '获取链接失败' && exit 1
-echo "$directlink" | sed "s/\r//g"
+referer_post="https://ww1.lanzouo.com/fn?$downid"
+post_data="action=downprocess&websignkey=$ajaxdata&signs=$ajaxdata&sign=$wp_sign&websign=&kd=$kdns&ves=1"
+json_response=$(curl -s -H "User-Agent: $UA" -H "Referer: $referer_post" --data "$post_data" "https://ww1.lanzouo.com/ajaxm.php?file=$ajax_file")
+
+dom=$(echo "$json_response" | sed -E 's/.*"dom":"([^"]+)".*/\1/' | sed 's/\\//g')
+url=$(echo "$json_response" | sed -E 's/.*"url":"([^"]+)".*/\1/')
+[ -z "$dom" ] || [ -z "$url" ] && { echo "无法解析下载地址"; exit 1; }
+
+echo "${dom}/file/${url}"

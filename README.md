@@ -20,7 +20,7 @@ https://i91.lanzoug.com:446/xxx #已省略链接
 
 ## Python
 
-注：Python 主要代码由 ChatGPT 完成，已经过人工修复，但未进行充分测试，可能存在问题
+注：Python 代码由 DeepSeek 完成，未经过测试，可能无法使用
 
 ```python
 # 不带密码
@@ -34,11 +34,8 @@ print(direct_link)
 
 ## TODO
 
-- [x] 随机`X-Forwarded-For`以防止用户IP被屏蔽
-- [x] 支持解析带密码文件
+- [ ] 随机`X-Forwarded-For`以防止用户IP被屏蔽
+- [ ] 支持解析带密码文件
 - [ ] 支持解析文件夹
 - [x] 支持多种编程语言
 
-## 参考资料
-
-- [5ime/Lanzou_API](https://github.com/5ime/Lanzou_API): 解析思路来源
