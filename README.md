@@ -28,14 +28,14 @@ direct_link = fetch_direct_link('iuAd711aksub')
 print(direct_link)
 
 # 带密码
-direct_link = fetch_direct_link('i2tL911a5x8j', 'dtzn')
+direct_link = fetch_direct_link_with_password('i2tL911a5x8j', 'dtzn')
 print(direct_link)
 ```
 
 ## TODO
 
 - [ ] 随机`X-Forwarded-For`以防止用户IP被屏蔽
-- [ ] 支持解析带密码文件
+- [x] 支持解析带密码文件
 - [ ] 支持解析文件夹
 - [x] 支持多种编程语言
 
